@@ -28,32 +28,33 @@ from filch import constants
 from filch import helpers
 
 
-# TODO(rbrady) add labels as optional arument
 @click.command()
 @click.argument('change_id')
-@click.option('--board_name', default=None, type=str)
-def import_from_gerrit(change_id, board_name):
+@click.option('--board', '-b', default=None, type=str)
+@click.option('--labels', '-l', multiple=True)
+@click.option('--list_name', default='New', type=str)
+def import_from_gerrit(change_id, board, labels, list_name):
     config = helpers.get_config_info()
-    if not board_name:
+    if not board:
         if 'default_board' not in config:
             click.echo("No default_board exists in ~/filch.conf")
             click.echo("You must either set a default_board in ~/filch.conf "
                        "or use the --board_name option.")
             sys.exit(1)
         else:
-            board_name = config['default_board']
+            board = config['default_board']
 
     gerrit = GerritRestAPI(url="https://review.openstack.org", auth=None)
     change = gerrit.get("/changes/%s" % change_id)
     helpers.create_trello_card(
         config['api_key'],
         config['access_token'],
-        board_name,
+        board,
         change['subject'],
         constants.GERRIT_CARD_DESC.format(**change),
-        card_labels=['Automation Testing', 'Imported'],
+        card_labels=list(labels),
         card_due="null",
-        list_name='New'
+        list_name=list_name
     )
     click.echo('You have successfully imported "{subject}"'.format(**change))
 

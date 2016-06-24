@@ -15,6 +15,6 @@ https://trello.com/1/authorize?expiration=never&scope=read,write,account&respons
 Next, you'll need to create a ~/.filch.conf file and insert your api key and
 access token:
 
-[trello]
-api_key=xxxxxxx
-access_token=xxxxxxxxxxxxxxxxxx
+    [trello]
+    api_key=xxxxxxx
+    access_token=xxxxxxxxxxxxxxxxxx
