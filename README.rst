@@ -9,13 +9,13 @@ specific information.
 Installation
 ~~~~~~~~~~~~
 
-Filch is still under development and not released on PyPi yet.
+Filch is still under development and not released on PyPi yet. ::
 
-git clone https://github.com/rbrady/filch.git
-cd filch
-virtualenv .myenv
-source .myenv/bin/activate
-pip install -IU .
+    git clone https://github.com/rbrady/filch.git
+    cd filch
+    virtualenv .myenv
+    source .myenv/bin/activate
+    pip install -IU .
 
 Configuration
 ~~~~~~~~~~~~~
