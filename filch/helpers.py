@@ -23,6 +23,7 @@ import os
 import sys
 
 import click
+import requests
 from trello import trelloclient
 
 try:
@@ -64,3 +65,10 @@ def create_trello_card(api_key, access_token, board_name, card_name, card_desc,
     new_list = [trello_list for trello_list in board.open_lists()
                 if trello_list.name == list_name][0]
     return new_list.add_card(card_name, card_desc, default_labels, card_due)
+
+
+def get_blueprint(project, blueprint):
+    url = 'https://api.launchpad.net/devel/{project}/+spec/{blueprint}'
+    r = requests.get(
+        url.format(project='tripleo', blueprint='mistral-deployment-library'))
+    return r.json()

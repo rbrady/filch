@@ -26,3 +26,13 @@ project: {project}
 status: {status}
 source: gerrit|{_number}
 """
+
+BLUEPRINT_CARD_DESC = """{summary}
+
+blueprint_url: {web_link}
+spec: {specification_url}
+assignee: {assignee_link}
+status: {lifecycle_status}
+definition: {definition_status}
+source: bp|{name}
+"""

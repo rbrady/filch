@@ -33,14 +33,13 @@ setup(
     include_package_data=True,
     install_requires=[
         'click',
-        'launchpadlib',
         'pygerrit',
         'python-bugzilla',
         'py-trello'
     ],
     entry_points={
         'console_scripts': [
-            'filch_import_gerrit = filch.import_gerrit:import_from_gerrit',
+            'trello_import = filch.trello_import:trello_import',
         ],
     }
 )

@@ -29,11 +29,13 @@ from filch import helpers
 
 
 @click.command()
-@click.argument('change_id')
+@click.option('--gerrit', '-g', default=None, type=str)
+@click.option('--blueprint', '-bp', default=None, type=str)
+@click.option('--project', '-p', default=None, type=str)
 @click.option('--board', '-b', default=None, type=str)
 @click.option('--labels', '-l', multiple=True)
 @click.option('--list_name', default='New', type=str)
-def import_from_gerrit(change_id, board, labels, list_name):
+def trello_import(gerrit, blueprint, project, board, labels, list_name):
     config = helpers.get_config_info()
     if not board:
         if 'default_board' not in config:
@@ -44,19 +46,37 @@ def import_from_gerrit(change_id, board, labels, list_name):
         else:
             board = config['default_board']
 
-    gerrit = GerritRestAPI(url="https://review.openstack.org", auth=None)
-    change = gerrit.get("/changes/%s" % change_id)
-    helpers.create_trello_card(
-        config['api_key'],
-        config['access_token'],
-        board,
-        change['subject'],
-        constants.GERRIT_CARD_DESC.format(**change),
-        card_labels=list(labels),
-        card_due="null",
-        list_name=list_name
-    )
-    click.echo('You have successfully imported "{subject}"'.format(**change))
+    if gerrit:
+        gerrit_api = GerritRestAPI(url="https://review.openstack.org", auth=None)
+        change = gerrit_api.get("/changes/%s" % gerrit)
+        helpers.create_trello_card(
+            config['api_key'],
+            config['access_token'],
+            board,
+            change['subject'],
+            constants.GERRIT_CARD_DESC.format(**change),
+            card_labels=list(labels),
+            card_due="null",
+            list_name=list_name
+        )
+        click.echo('You have successfully imported "%s"' % change['subject'])
+
+    if blueprint:
+        if not project:
+            click.echo('To import a blueprint you must provide a project.')
+            sys.exit(1)
+        blueprint = helpers.get_blueprint(project, blueprint)
+        helpers.create_trello_card(
+            config['api_key'],
+            config['access_token'],
+            board,
+            blueprint['title'],
+            constants.BLUEPRINT_CARD_DESC.format(**blueprint),
+            card_labels=list(labels),
+            card_due="null",
+            list_name=list_name
+        )
+        click.echo('You have successfully imported "%s"' % blueprint['title'])
 
 if __name__ == '__main__':
-    import_from_gerrit()
+    trello_import()
