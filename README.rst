@@ -6,6 +6,20 @@ import or update trello cards.  The external systems are the source of truth
 for details and status while the trello card only holds comments or downstream
 specific information.
 
+Installation
+~~~~~~~~~~~~
+
+Filch is still under development and not released on PyPi yet.
+
+git clone https://github.com/rbrady/filch.git
+cd filch
+virtualenv .myenv
+source .myenv/bin/activate
+pip install -IU .
+
+Configuration
+~~~~~~~~~~~~~
+
 To use filch, you'll need to visit https://trello.com/app-key and generate an
 api key.  once you have your api key, you'll also need to visit the following
 URI, substituting your api key in <your_key>.
