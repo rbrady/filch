@@ -20,51 +20,42 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #!/usr/bin/env python
-import click
-import os
-from pprint import pprint
 import sys
+import click
+from pygerrit.rest import GerritRestAPI
 
-from filch.external import gerrit
-from filch.external import trello
-
-try:
-    import configparser
-except ImportError:
-    import ConfigParser as configparser
-
-CONFIG_PATH = os.environ.get('FILCH_CONFIG',
-                             os.path.expanduser('~/.filch.conf'))
+from filch import constants
+from filch import helpers
 
 
-
+# TODO(rbrady) add labels as optional arument
 @click.command()
 @click.argument('change_id')
-def import_from_gerrit(change_id):
-    config = configparser.SafeConfigParser()
-    if not config.read(CONFIG_PATH):
-        click.echo('Failed to parse config file {}.'.format(CONFIG_PATH))
-        sys.exit(1)
-    if not config.has_section('trello'):
-        click.echo('Config file does not contain section [trello].')
-        sys.exit(1)
-    trello_data = dict(config.items('trello'))
-    required_settings = ['api_key', 'access_token']
-    for setting in required_settings:
-        if setting not in trello_data:
-            click.echo(
-                'Config file requires a setting for {setting}'
-                ' in section [trello].'.format(setting)
-            )
+@click.option('--board_name', default=None, type=str)
+def import_from_gerrit(change_id, board_name):
+    config = helpers.get_config_info()
+    if not board_name:
+        if 'default_board' not in config:
+            click.echo("No default_board exists in ~/filch.conf")
+            click.echo("You must either set a default_board in ~/filch.conf "
+                       "or use the --board_name option.")
             sys.exit(1)
-    change = gerrit.get_gerrit_change(change_id)
-    pprint(change)
-    # TODO(rbrady): map fields from gerrit change to trello card
-    # trello_api = trello.Trello(
-    #   trello_data['api_key'], trello_data['api_token'])
-    # get board and list ids
-    # create card
+        else:
+            board_name = config['default_board']
 
+    gerrit = GerritRestAPI(url="https://review.openstack.org", auth=None)
+    change = gerrit.get("/changes/%s" % change_id)
+    helpers.create_trello_card(
+        config['api_key'],
+        config['access_token'],
+        board_name,
+        change['subject'],
+        constants.GERRIT_CARD_DESC.format(**change),
+        card_labels=['Automation Testing', 'Imported'],
+        card_due="null",
+        list_name='New'
+    )
+    click.echo('You have successfully imported "{subject}"'.format(**change))
 
 if __name__ == '__main__':
     import_from_gerrit()

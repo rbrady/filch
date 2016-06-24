@@ -19,9 +19,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from pygerrit.rest import GerritRestAPI
+GERRIT_CARD_DESC = """This card was imported to Trello from Gerrit.
 
-
-def get_gerrit_change(change_id):
-    rest_api = GerritRestAPI(url="https://review.openstack.org", auth=None)
-    return rest_api.get("/changes/%s/detail" % change_id)
+updated: {updated}
+project: {project}
+status: {status}
+source: gerrit|{_number}
+"""
