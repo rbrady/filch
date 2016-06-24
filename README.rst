@@ -46,7 +46,7 @@ The following example demonstrates importing a change from gerrit.
 trello_import --gerrit 299937
 
 
-Importing a Launchpad Blueprint
+Launchpad Blueprint
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following example demonstrates importing the mistral-deployment-library from
@@ -55,7 +55,7 @@ the TripleO project.
 trello_import --blueprint mistral-deployment-library --project tripleo
 
 
-Importing a Launchpad Bug
+Launchpad Bug
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following example demonstrates importing a bug from launchpad.
