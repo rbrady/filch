@@ -36,7 +36,7 @@ setup(
         'launchpadlib',
         'pygerrit',
         'python-bugzilla',
-        'requests',
+        'py-trello'
     ],
     entry_points={
         'console_scripts': [
