@@ -72,3 +72,10 @@ def get_blueprint(project, blueprint):
     r = requests.get(
         url.format(project='tripleo', blueprint='mistral-deployment-library'))
     return r.json()
+
+
+def get_launchpad_bug(bug_id):
+    url = 'https://api.launchpad.net/devel/bugs/%s'
+    r = requests.get(url % bug_id)
+    return r.json()
+

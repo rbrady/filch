@@ -32,10 +32,12 @@ from filch import helpers
 @click.option('--gerrit', '-g', default=None, type=str)
 @click.option('--blueprint', '-bp', default=None, type=str)
 @click.option('--project', '-p', default=None, type=str)
+@click.option('--bug_id', default=None, type=str)
 @click.option('--board', '-b', default=None, type=str)
 @click.option('--labels', '-l', multiple=True)
 @click.option('--list_name', default='New', type=str)
-def trello_import(gerrit, blueprint, project, board, labels, list_name):
+def trello_import(gerrit, blueprint, project, bug_id, board, labels,
+                  list_name):
     config = helpers.get_config_info()
     if not board:
         if 'default_board' not in config:
@@ -77,6 +79,20 @@ def trello_import(gerrit, blueprint, project, board, labels, list_name):
             list_name=list_name
         )
         click.echo('You have successfully imported "%s"' % blueprint['title'])
+
+    if bug_id:
+        bug = helpers.get_launchpad_bug(bug_id)
+        helpers.create_trello_card(
+            config['api_key'],
+            config['access_token'],
+            board,
+            bug['title'],
+            constants.BUG_CARD_DESC.format(**bug),
+            card_labels=list(labels),
+            card_due="null",
+            list_name=list_name
+        )
+        click.echo('You have successfully imported "%s"' % bug['title'])
 
 if __name__ == '__main__':
     trello_import()

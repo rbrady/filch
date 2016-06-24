@@ -13,7 +13,7 @@ URI, substituting your api key in <your_key>.
 https://trello.com/1/authorize?expiration=never&scope=read,write,account&response_type=token&name=Server%20Token&key=<your_key>
 
 Next, you'll need to create a ~/.filch.conf file and insert your api key and
-access token:
+access token: ::
 
     [trello]
     api_key=xxxxxxx
@@ -32,13 +32,21 @@ The following example demonstrates importing a change from gerrit.
 trello_import --gerrit 299937
 
 
-Importing a Blueprint Launchpad
+Importing a Launchpad Blueprint
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following example demonstrates importing the mistral-deployment-library from
 the TripleO project.
 
 trello_import --blueprint mistral-deployment-library --project tripleo
+
+
+Importing a Launchpad Bug
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following example demonstrates importing a bug from launchpad.
+
+trello_import --bug_id 1594879
 
 
 Overriding Default Values

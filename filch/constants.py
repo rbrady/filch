@@ -36,3 +36,10 @@ status: {lifecycle_status}
 definition: {definition_status}
 source: bp|{name}
 """
+
+BUG_CARD_DESC = """{description}
+
+bug_url: {web_link}
+information_type: {information_type}
+source: bug|{id}
+"""
