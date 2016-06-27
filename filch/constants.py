@@ -21,6 +21,7 @@
 # SOFTWARE.
 GERRIT_CARD_DESC = """This card was imported to Trello from Gerrit.
 
+url: https://review.openstack.org/#/c/{_number}/
 updated: {updated}
 project: {project}
 status: {status}
