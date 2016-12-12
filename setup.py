@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='filch',
-    version='0.2',
+    version='0.3',
     author='Ryan Brady',
     author_email='ryan@ryanbrady.org',
     packages=find_packages(),
@@ -35,7 +35,8 @@ setup(
         'click',
         'pygerrit',
         'python-bugzilla',
-        'py-trello'
+        'py-trello',
+        'pytz',
     ],
     entry_points={
         'console_scripts': [

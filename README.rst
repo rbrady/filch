@@ -43,7 +43,7 @@ Gerrit
 
 The following example demonstrates importing a change from gerrit.
 
-trello_import --gerrit 299937
+filch-import --gerrit 299937
 
 
 Launchpad Blueprint
@@ -52,7 +52,7 @@ Launchpad Blueprint
 The following example demonstrates importing the mistral-deployment-library from
 the TripleO project.
 
-trello_import --blueprint mistral-deployment-library --project tripleo
+filch-import --blueprint mistral-deployment-library --project tripleo
 
 
 Launchpad Bug
@@ -60,7 +60,7 @@ Launchpad Bug
 
 The following example demonstrates importing a bug from launchpad.
 
-trello_import --bug_id 1594879
+filch-import --bug_id 1594879
 
 
 Overriding Default Values
@@ -69,7 +69,7 @@ Overriding Default Values
 You can override the values of the board (--board) or list (--list_name) where the card is created in
 Trello.
 
-trello_import --gerrit 299937 --board Example-Board --list_name Backlog
+filch-import --gerrit 299937 --board Example-Board --list_name Backlog
 
 
 Adding Labels
@@ -79,4 +79,4 @@ You can add one or more labels to a card created in Trello by passing  -l <Label
 to the command for each label you want to add.  The label must correspond to a
 label name already in Trello.
 
-trello_import --gerrit 299937 -l Imported
+filch-import --gerrit 299937 -l Imported

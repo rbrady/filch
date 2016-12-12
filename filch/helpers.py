@@ -64,7 +64,10 @@ def create_trello_card(api_key, access_token, board_name, card_name, card_desc,
                       if label.name in card_labels]
     new_list = [trello_list for trello_list in board.open_lists()
                 if trello_list.name == list_name][0]
-    return new_list.add_card(card_name, card_desc, default_labels, card_due)
+    card_dup = [card for card in new_list.list_cards()
+                if card.name == card_name and card.desc == card_desc]
+    if not card_dup:
+        return new_list.add_card(card_name, card_desc, default_labels, card_due)
 
 
 def get_blueprint(project, blueprint):

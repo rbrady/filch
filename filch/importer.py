@@ -24,8 +24,8 @@ import sys
 import click
 from pygerrit.rest import GerritRestAPI
 
-from importer import constants
-from importer import helpers
+from filch import constants
+from filch import helpers
 
 
 @click.command()
