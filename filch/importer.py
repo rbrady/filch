@@ -24,8 +24,8 @@ import sys
 import click
 from pygerrit.rest import GerritRestAPI
 
-from filch import constants
-from filch import helpers
+from importer import constants
+from importer import helpers
 
 
 @click.command()
@@ -36,7 +36,7 @@ from filch import helpers
 @click.option('--board', '-b', default=None, type=str)
 @click.option('--labels', '-l', multiple=True)
 @click.option('--list_name', default='New', type=str)
-def trello_import(gerrit, blueprint, project, bug_id, board, labels,
+def importer(gerrit, blueprint, project, bug_id, board, labels,
                   list_name):
     config = helpers.get_config_info()
     if not board:
@@ -95,4 +95,4 @@ def trello_import(gerrit, blueprint, project, bug_id, board, labels,
         click.echo('You have successfully imported "%s"' % bug['title'])
 
 if __name__ == '__main__':
-    trello_import()
+    importer()

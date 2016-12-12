@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='filch',
-    version='0.1',
+    version='0.2',
     author='Ryan Brady',
     author_email='ryan@ryanbrady.org',
     packages=find_packages(),
@@ -39,7 +39,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'trello_import = filch.trello_import:trello_import',
+            'filch-import = filch.importer:importer',
         ],
     }
 )
