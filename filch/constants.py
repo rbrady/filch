@@ -38,7 +38,7 @@ definition: {definition_status}
 source: bp|{name}
 """
 
-BUG_CARD_DESC = """{description}
+BUG_CARD_DESC = u"""{description}
 
 bug_url: {web_link}
 information_type: {information_type}
