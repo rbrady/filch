@@ -50,3 +50,4 @@ BZ_CARD_DESC = u"""{description}
 bug_url: {weburl}
 source: bz|{id}
 """
+
