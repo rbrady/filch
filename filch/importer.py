@@ -1,6 +1,6 @@
 # The MIT License (MIT)
 #
-# Copyright (c) 2016 Ryan Brady <ryan@ryanbrady.org>
+# Copyright (c) 2017 Ryan Brady <ryan@ryanbrady.org>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -24,75 +24,146 @@ import sys
 import click
 from pygerrit.rest import GerritRestAPI
 
+from filch import cards
+from filch import configuration
 from filch import constants
-from filch import helpers
+from filch import utils
 
 
 @click.command()
-@click.option('--gerrit', '-g', default=None, type=str)
-@click.option('--blueprint', '-bp', default=None, type=str)
+@click.argument('service')
+@click.option('--id', default=None, type=str, multiple=True)
+@click.option('--url', default=None, type=str)
+@click.option('--host', default=None, type=str)
+@click.option('--user', default=None, type=str)
+@click.option('--password', default=None, type=str)
+@click.option('--sslverify', default=None, type=str)
 @click.option('--project', '-p', default=None, type=str)
-@click.option('--bug_id', default=None, type=str)
 @click.option('--board', '-b', default=None, type=str)
 @click.option('--labels', '-l', multiple=True)
 @click.option('--list_name', default='New', type=str)
-def importer(gerrit, blueprint, project, bug_id, board, labels,
-                  list_name):
-    config = helpers.get_config_info()
+def importer(service, id, url, host, user, password, sslverify, project,
+             board, labels, list_name):
+    config = configuration.get_config()
+    trello_key = config['trello']['api_key']
+    trello_token = config['trello']['access_token']
     if not board:
-        if 'default_board' not in config:
+        if 'default_board' not in config['trello']:
             click.echo("No default_board exists in ~/filch.conf")
             click.echo("You must either set a default_board in ~/filch.conf "
                        "or use the --board_name option.")
             sys.exit(1)
         else:
-            board = config['default_board']
+            board = config['trello']['default_board']
 
-    if gerrit:
-        gerrit_api = GerritRestAPI(url="https://review.openstack.org", auth=None)
-        change = gerrit_api.get("/changes/%s" % gerrit)
-        helpers.create_trello_card(
-            config['api_key'],
-            config['access_token'],
-            board,
-            change['subject'],
-            constants.GERRIT_CARD_DESC.format(**change),
-            card_labels=list(labels),
-            card_due="null",
-            list_name=list_name
-        )
-        click.echo('You have successfully imported "%s"' % change['subject'])
+    if service == 'gerrit':
+        # default to upstream openstack
+        # if host is present then use that
+        # if url is present then use that
+        gerrit_url = "https://review.openstack.org"
+        if host:
+            gerrit_url = config['gerrit'][host]['url']
+        if url:
+            gerrit_url = url
 
-    if blueprint:
+        gerrit_api = GerritRestAPI(url=gerrit_url, auth=None)
+        for change_id in list(id):
+            change = gerrit_api.get("/changes/%s" % change_id)
+            cards.create_card(
+                trello_key,
+                trello_token,
+                board,
+                change['subject'],
+                constants.GERRIT_CARD_DESC.format(**change),
+                card_labels=list(labels),
+                card_due="null",
+                list_name=list_name
+            )
+            click.echo(
+                'You have successfully imported "%s"' % change['subject'])
+
+    if service == 'blueprint':
         if not project:
             click.echo('To import a blueprint you must provide a project.')
             sys.exit(1)
-        blueprint = helpers.get_blueprint(project, blueprint)
-        helpers.create_trello_card(
-            config['api_key'],
-            config['access_token'],
-            board,
-            blueprint['title'],
-            constants.BLUEPRINT_CARD_DESC.format(**blueprint),
-            card_labels=list(labels),
-            card_due="null",
-            list_name=list_name
-        )
-        click.echo('You have successfully imported "%s"' % blueprint['title'])
+        for bp_id in list(id):
+            blueprint = utils.get_blueprint(project, bp_id)
+            cards.create_card(
+                trello_key,
+                trello_token,
+                board,
+                blueprint['title'],
+                constants.BLUEPRINT_CARD_DESC.format(**blueprint),
+                card_labels=list(labels),
+                card_due="null",
+                list_name=list_name
+            )
+            click.echo(
+                'You have successfully imported "%s"' % blueprint['title'])
 
-    if bug_id:
-        bug = helpers.get_launchpad_bug(bug_id)
-        helpers.create_trello_card(
-            config['api_key'],
-            config['access_token'],
-            board,
-            bug['title'],
-            constants.BUG_CARD_DESC.format(**bug),
-            card_labels=list(labels),
-            card_due="null",
-            list_name=list_name
-        )
-        click.echo('You have successfully imported "%s"' % bug['title'])
+    if service == 'bug':
+        for bug_id in list(id):
+            bug = utils.get_launchpad_bug(bug_id)
+            cards.create_card(
+                trello_key,
+                trello_token,
+                board,
+                bug['title'],
+                constants.BUG_CARD_DESC.format(**bug),
+                card_labels=list(labels),
+                card_due="null",
+                list_name=list_name
+            )
+            click.echo(
+                'You have successfully imported "%s"' % bug['title'])
+
+    if service in ['bz', 'bugzilla']:
+        if url:
+            # also need user & password.  sslverify is optional
+            if not user or not password:
+                click.echo("If using a url for Bugzilla, you must also "
+                           "provide a user and password.")
+                sys.exit(1)
+
+        # if host arg is not used, use first host from
+        # configuration as default
+        if not host:
+            # check to ensure a host for bugzilla exists in config
+            if len(config['bugzilla'].keys()) == 0:
+                click.echo("No Bugzilla data configuration file.  Please "
+                           "add configuration data or pass url, user and "
+                           "password arguments.")
+                sys.exit(1)
+            else:
+                host = config['bugzilla'].keys()[0]
+
+        url = config['bugzilla'][host]['url']
+        user = config['bugzilla'][host]['user']
+
+        sslverify = config['bugzilla'][host].get('sslverify', True)
+
+        for bz_id in list(id):
+            bug = utils.get_bz(bz_id, url=url, user=user, password=password,
+                               sslverify=sslverify)
+
+            if len(bug.comments) > 0:
+                bug.description = bug.comments[0]['text']
+
+            cards.create_card(
+                trello_key,
+                trello_token,
+                board,
+                bug.summary,
+                constants.BZ_CARD_DESC.format(**bug.__dict__),
+                card_labels=list(labels),
+                card_due="null",
+                list_name=list_name
+            )
+            click.echo('You have successfully imported "%s"' % bug.title)
+
+    if service == 'debug':
+        ids = list(id)
+        print(ids)
 
 if __name__ == '__main__':
     importer()

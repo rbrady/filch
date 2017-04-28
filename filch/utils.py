@@ -19,34 +19,29 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-GERRIT_CARD_DESC = u"""This card was imported to Trello from Gerrit.
+import bugzilla
+import requests
 
-url: https://review.openstack.org/#/c/{_number}/
-updated: {updated}
-project: {project}
-status: {status}
-source: gerrit|{_number}
-"""
 
-BLUEPRINT_CARD_DESC = u"""{summary}
+def get_blueprint(project, blueprint):
+    url = 'https://api.launchpad.net/devel/{project}/+spec/{blueprint}'
+    r = requests.get(
+        url.format(project=project, blueprint=blueprint))
+    return r.json()
 
-blueprint_url: {web_link}
-spec: {specification_url}
-assignee: {assignee_link}
-status: {lifecycle_status}
-definition: {definition_status}
-source: bp|{name}
-"""
 
-BUG_CARD_DESC = u"""{description}
+def get_launchpad_bug(bug_id):
+    url = 'https://api.launchpad.net/devel/bugs/%s'
+    r = requests.get(url % bug_id)
+    return r.json()
 
-bug_url: {web_link}
-information_type: {information_type}
-source: bug|{id}
-"""
 
-BZ_CARD_DESC = u"""{description}
+def get_bz(bz_id, **kwargs):
+    bz4 = bugzilla.Bugzilla44(
+        url=kwargs['url'],
+        user=kwargs['user'], password=kwargs['password'],
+        sslverify=kwargs['sslverify']
+    )
 
-bug_url: {weburl}
-source: bz|{id}
-"""
+    return bz4.getbug(bz_id)
+

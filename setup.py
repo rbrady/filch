@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='filch',
-    version='0.3',
+    version='0.3.3',
     author='Ryan Brady',
     author_email='ryan@ryanbrady.org',
     packages=find_packages(),
@@ -37,6 +37,12 @@ setup(
         'python-bugzilla',
         'py-trello',
         'pytz',
+        'PyYaml',
+        'zbar',
+        'pillow',
+        'qrtools',
+        'pyqrcode'
+
     ],
     entry_points={
         'console_scripts': [
