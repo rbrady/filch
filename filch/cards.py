@@ -21,6 +21,15 @@
 # SOFTWARE.
 from trello import trelloclient
 
+_MAX_DESC_LEN = 16384
+
+
+def _get_description(desc):
+    l = len(desc)
+    if l > _MAX_DESC_LEN:
+        desc = desc[l - _MAX_DESC_LEN:]
+    return desc
+
 
 def create_card(api_key, access_token, board_name, card_name, card_desc,
                        card_labels=[], card_due="null", list_name='New'):
@@ -35,4 +44,5 @@ def create_card(api_key, access_token, board_name, card_name, card_desc,
     card_dup = [card for card in new_list.list_cards()
                 if card.name == card_name and card.desc == card_desc]
     if not card_dup:
+        card_desc = _get_description(card_desc)
         return new_list.add_card(card_name, card_desc, default_labels, card_due)
