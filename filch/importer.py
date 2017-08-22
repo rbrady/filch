@@ -37,13 +37,12 @@ from filch import utils
 @click.option('--host', default=None, type=str)
 @click.option('--user', default=None, type=str)
 @click.option('--password', default=None, type=str)
-@click.option('--sslverify', default=None, type=str)
 @click.option('--project', '-p', default=None, type=str)
 @click.option('--board', '-b', default=None, type=str)
 @click.option('--labels', '-l', multiple=True)
 @click.option('--list_name', default='New', type=str)
-def importer(service, id, url, host, user, password, sslverify, project,
-             board, labels, list_name):
+def importer(service, id, url, host, user, password, project, board,
+             labels, list_name):
     config = configuration.get_config()
     trello_key = config['trello']['api_key']
     trello_token = config['trello']['access_token']
@@ -143,23 +142,26 @@ def importer(service, id, url, host, user, password, sslverify, project,
         sslverify = config['bugzilla'][host].get('sslverify', True)
 
         for bz_id in list(id):
-            bug = utils.get_bz(bz_id, url=url, user=user, password=password,
-                               sslverify=sslverify)
+            try:
+                bug = utils.get_bz(bz_id, url=url, user=user, password=password,
+                                   sslverify=sslverify)
 
-            if len(bug.comments) > 0:
-                bug.description = bug.comments[0]['text']
+                if len(bug.comments) > 0:
+                    bug.description = bug.comments[0]['text']
 
-            cards.create_card(
-                trello_key,
-                trello_token,
-                board,
-                bug.summary,
-                constants.BZ_CARD_DESC.format(**bug.__dict__),
-                card_labels=list(labels),
-                card_due="null",
-                list_name=list_name
-            )
-            click.echo('You have successfully imported "%s"' % bug.title)
+                cards.create_card(
+                    trello_key,
+                    trello_token,
+                    board,
+                    bug.summary,
+                    constants.BZ_CARD_DESC.format(**bug.__dict__),
+                    card_labels=list(labels),
+                    card_due="null",
+                    list_name=list_name
+                )
+                click.echo('You have successfully imported "%s"' % bug.summary)
+            except Exception as err:
+                click.echo(err)
 
     if service == 'debug':
         ids = list(id)

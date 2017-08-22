@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='filch',
-    version='0.3.3',
+    version='0.3.4',
     author='Ryan Brady',
     author_email='ryan@ryanbrady.org',
     packages=find_packages(),
@@ -34,7 +34,6 @@ setup(
     install_requires=[
         'click',
         'pygerrit',
-        'python-bugzilla',
         'py-trello',
         'pytz',
         'PyYaml',
