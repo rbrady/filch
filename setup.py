@@ -35,13 +35,7 @@ setup(
         'click',
         'pygerrit',
         'py-trello',
-        'pytz',
         'PyYaml',
-        'zbar',
-        'pillow',
-        'qrtools',
-        'pyqrcode'
-
     ],
     entry_points={
         'console_scripts': [
