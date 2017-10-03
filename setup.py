@@ -36,6 +36,7 @@ setup(
         'pygerrit',
         'py-trello',
         'PyYaml',
+        'python-bugzilla',
     ],
     entry_points={
         'console_scripts': [
