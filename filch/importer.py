@@ -87,7 +87,7 @@ def importer(service, id, url, host, user, password, project, board,
             sys.exit(1)
         for bp_id in list(id):
             blueprint = utils.get_blueprint(project, bp_id)
-            card = cards.create_card(
+            cards.create_card(
                 trello_key,
                 trello_token,
                 board,
@@ -99,8 +99,6 @@ def importer(service, id, url, host, user, password, project, board,
             )
             click.echo(
                 'You have successfully imported "%s"' % blueprint['title'])
-            if card is not None:
-                click.echo(card.url)
 
     if service == 'bug':
         for bug_id in list(id):
