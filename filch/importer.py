@@ -134,7 +134,7 @@ def importer(service, id, url, host, user, password, project, board,
                            "password arguments.")
                 sys.exit(1)
             else:
-                host = config['bugzilla'].keys()[0]
+                host = list(config['bugzilla'].keys())[0]
 
         url = config['bugzilla'][host]['url']
         user = config['bugzilla'][host]['user']
