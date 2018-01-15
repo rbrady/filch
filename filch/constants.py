@@ -45,6 +45,13 @@ information_type: {information_type}
 source: bug|{id}
 """
 
+STORY_CARD_DESC = u"""{description}
+
+story_url: {story_url}
+status: {status}
+source: story|{id}
+"""
+
 BZ_CARD_DESC = u"""{description}
 
 bug_url: {weburl}
