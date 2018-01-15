@@ -116,6 +116,22 @@ def importer(service, id, url, host, user, password, project, board,
             click.echo(
                 'You have successfully imported "%s"' % bug['title'])
 
+    if service == 'story':
+        for story_id in list(id):
+            story = utils.get_storyboard_story(story_id)
+            cards.create_card(
+                trello_key,
+                trello_token,
+                board,
+                story['title'],
+                constants.STORY_CARD_DESC.format(**story),
+                card_labels=list(labels),
+                card_due="null",
+                list_name=list_name
+            )
+            click.echo(
+                'You have successfully imported "%s"' % story['title'])
+
     if service in ['bz', 'bugzilla']:
         if url:
             # also need user & password.  sslverify is optional

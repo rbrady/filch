@@ -36,6 +36,13 @@ def get_launchpad_bug(bug_id):
     return r.json()
 
 
+def get_storyboard_story(story_id):
+    url = 'https://storyboard.openstack.org/api/v1/stories/%s' % story_id
+    r = requests.get(url)
+    story = r.json()
+    story['story_url'] = url
+    return story
+
 def get_bz(bz_id, **kwargs):
     bz4 = bugzilla.Bugzilla44(
         url=kwargs['url'],
@@ -44,4 +51,3 @@ def get_bz(bz_id, **kwargs):
     )
 
     return bz4.getbug(bz_id)
-
