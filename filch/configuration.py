@@ -18,21 +18,20 @@ import sys
 import click
 import yaml
 
-from filch import exceptions as peeves
-
-
-def open_config_file(pathspec):
-    with open(pathspec, 'r') as config_file:
-        return config_file.read()
+from filch import exceptions
 
 
 def get_config(pathspec=os.path.expanduser('~/.filch.yaml')):
-    config = yaml.safe_load(open_config_file(pathspec))
-    # check for required settings
-    if 'trello' not in config:
-        raise peeves.MissingConfigurationSectionException('trello')
-    required_trello_settings = ['api_key', 'access_token']
-    for setting in required_trello_settings:
-        if setting not in config['trello']:
-            raise peeves.MissingConfigurationSettingException(setting)
-    return config
+    with open(pathspec, 'r') as config_file:
+        config = yaml.safe_load(config_file.read())
+        # check for required settings
+        if 'trello' not in config:
+            click.echo('Trello config section required.')
+            raise exceptions.MissingConfigurationSectionException('trello')
+        required_trello_settings = ['api_key', 'access_token']
+        for setting in required_trello_settings:
+            if setting not in config['trello']:
+                click.echo(
+                    'Missing %s in trello section of config file' % setting)
+                raise exceptions.MissingConfigurationSettingException(setting)
+        return config
