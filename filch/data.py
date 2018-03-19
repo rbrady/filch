@@ -24,6 +24,8 @@ import os
 import pdb
 
 import bugzilla
+from launchpadlib.launchpad import Launchpad
+
 
 from filch import constants
 from filch import utils
@@ -160,7 +162,9 @@ class ManualBlueprintSource(object):
             return "Features"
 
     def create_card(self, blueprint, labels):
-        version = blueprint['milestone_link'].split('/')[-1].split('-')[0]
+        version = "unspecified"
+        if blueprint['milestone_link']:
+            version = blueprint['milestone_link'].split('/')[-1].split('-')[0]
         priority = blueprint['priority']
         # normalize the priority to fit within typical RFE attributes
         if priority == 'Essential':
@@ -179,6 +183,74 @@ class ManualBlueprintSource(object):
         }
 
     def update_card(self, blueprint, card, labels):
+        # todo(rbrady): add code to swap labels for version and priority
+        # if needed, once the ability to delete labels from a card is added
+        # to py-trello.
+        pass
+
+
+class LaunchpadBugSource(object):
+
+    def __init__(self, project, search_args, default_labels=[]):
+        self.project = project
+        self.search_args = search_args
+        self.default_labels = default_labels
+
+    def query(self):
+        launchpad = Launchpad.login_anonymously('filch', 'production',
+                                                version='devel')
+        project = launchpad.projects[self.project]
+        bugs = project.searchTasks(**self.search_args)
+
+        return bugs
+
+    @staticmethod
+    def get_labels(results):
+        return {}
+
+    @staticmethod
+    def sort_card(bug):
+        if bug.status in ["New", "Confirmed", "Triaged", "Incomplete"]:
+            return "Bugs"
+        elif bug.status == "In Progress":
+            return "In Progress"
+        else:
+            return "Complete"
+
+    def create_card(self, bug, labels):
+        try:
+            version = bug.milestone.name.split('/')[-1].split('-')[0]
+        except:
+            version = "unspecified"
+
+        priority = bug.importance
+        # normalize the priority to fit within typical Bug attributes
+        if priority == 'Critical':
+            priority = 'High'
+        if priority == 'Wishlist':
+            priority = 'Low'
+
+        bp_labels = [label.name for label in labels
+                     if label.name.endswith("(%s)" % version.title())
+                     or label.name.lower() == priority.lower()]
+
+        card_labels = bp_labels + self.default_labels
+
+        card_values = {
+            "description": bug.bug.description,
+            "web_link": bug.bug.web_link,
+            "information_type": bug.bug.information_type,
+            "id": bug.bug.id
+        }
+
+        return {
+            'name':  bug.bug.title,
+            'description': constants.BUG_CARD_DESC.format(**card_values),
+            'labels': card_labels,
+            'date_due': None,
+        }
+
+    def update_card(self, bug, card, labels):
         # todo(rbrady): add code to swap labels for version and priority
         # if needed, once the ability to delete labels from a card is added
         # to py-trello.
