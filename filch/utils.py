@@ -22,6 +22,8 @@
 import bugzilla
 import requests
 
+from filch import constants
+
 
 def get_blueprint(project, blueprint):
     url = 'https://api.launchpad.net/devel/{project}/+spec/{blueprint}'
@@ -43,6 +45,7 @@ def get_storyboard_story(story_id):
     story['story_url'] = url
     return story
 
+
 def get_bz(bz_id, **kwargs):
     bz4 = bugzilla.Bugzilla44(
         url=kwargs['url'],
@@ -51,3 +54,10 @@ def get_bz(bz_id, **kwargs):
     )
 
     return bz4.getbug(bz_id)
+
+
+def get_description(desc):
+    l = len(desc)
+    if l > constants.MAX_DESC_LEN:
+        desc = desc[l - constants.MAX_DESC_LEN:]
+    return desc

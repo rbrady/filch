@@ -19,11 +19,17 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from trello import trelloclient
-
+# NOTICE: (rbrady) This method is deprecated and will be removed on 4/1/2018
 _MAX_DESC_LEN = 16384
 
 
+def mirror_card(source, destination):
+    # given two different cards from two different boards
+    # mirror the data from the source card to the destination
+    # card
+    pass
+
+# NOTICE: (rbrady) This method is deprecated and will be removed on 4/1/2018
 def _get_description(desc):
     l = len(desc)
     if l > _MAX_DESC_LEN:
@@ -31,18 +37,11 @@ def _get_description(desc):
     return desc
 
 
-def create_card(api_key, access_token, board_name, card_name, card_desc,
-                       card_labels=[], card_due="null", list_name='New'):
+# NOTICE: (rbrady) This method is deprecated and will be removed on 4/1/2018
+def create_card(target_list, title, description, labels=[], due="null"):
 
-    trello_api = trelloclient.TrelloClient(api_key=api_key, token=access_token)
-    board = [b for b in trello_api.list_boards()
-             if b.name == board_name][0]
-    default_labels = [label for label in board.get_labels()
-                      if label.name in card_labels]
-    new_list = [trello_list for trello_list in board.open_lists()
-                if trello_list.name == list_name][0]
-    card_dup = [card for card in new_list.list_cards()
-                if card.name == card_name and card.desc == card_desc]
+    card_dup = [card for card in target_list.list_cards()
+                if card.name == title and card.desc == description]
     if not card_dup:
-        card_desc = _get_description(card_desc)
-        return new_list.add_card(card_name, card_desc, default_labels, card_due)
+        description = _get_description(description)
+        return target_list.add_card(title, description, labels, due)

@@ -20,9 +20,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #!/usr/bin/env python
+import os
 import sys
+
 import click
 from pygerrit.rest import GerritRestAPI
+from trello import trelloclient
 
 from filch import cards
 from filch import configuration
@@ -43,7 +46,12 @@ from filch import utils
 @click.option('--list_name', default='New', type=str)
 def importer(service, id, url, host, user, password, project, board,
              labels, list_name):
-    config = configuration.get_config()
+    try:
+        config = configuration.get_config()
+    except Exception as err:
+        click.echo(err)
+        sys.exit(1)
+
     trello_key = config['trello']['api_key']
     trello_token = config['trello']['access_token']
     if not board:
@@ -54,6 +62,22 @@ def importer(service, id, url, host, user, password, project, board,
             sys.exit(1)
         else:
             board = config['trello']['default_board']
+
+    trello_api = trelloclient.TrelloClient(
+        api_key=config['trello']['api_key'],
+        token=config['trello']['access_token']
+    )
+
+    board_obj = [b for b in trello_api.list_boards()
+                 if b.name == board][0]
+
+    # ensure labels being used are actually in the board
+    card_labels = [label for label in board_obj.get_labels()
+                      if label.name in list(labels)]
+
+    # ensure list name exists in board
+    board_list = [trello_list for trello_list in board_obj.open_lists()
+                if trello_list.name == list_name][0]
 
     if service == 'gerrit':
         # default to upstream openstack
@@ -69,14 +93,11 @@ def importer(service, id, url, host, user, password, project, board,
         for change_id in list(id):
             change = gerrit_api.get("/changes/%s" % change_id)
             cards.create_card(
-                trello_key,
-                trello_token,
-                board,
+                board_list,
                 change['subject'],
                 constants.GERRIT_CARD_DESC.format(**change),
-                card_labels=list(labels),
-                card_due="null",
-                list_name=list_name
+                labels=card_labels,
+                due="null",
             )
             click.echo(
                 'You have successfully imported "%s"' % change['subject'])
@@ -88,14 +109,11 @@ def importer(service, id, url, host, user, password, project, board,
         for bp_id in list(id):
             blueprint = utils.get_blueprint(project, bp_id)
             cards.create_card(
-                trello_key,
-                trello_token,
-                board,
+                board_list,
                 blueprint['title'],
                 constants.BLUEPRINT_CARD_DESC.format(**blueprint),
-                card_labels=list(labels),
-                card_due="null",
-                list_name=list_name
+                labels=card_labels,
+                due="null",
             )
             click.echo(
                 'You have successfully imported "%s"' % blueprint['title'])
@@ -104,14 +122,11 @@ def importer(service, id, url, host, user, password, project, board,
         for bug_id in list(id):
             bug = utils.get_launchpad_bug(bug_id)
             cards.create_card(
-                trello_key,
-                trello_token,
-                board,
+                board_list,
                 bug['title'],
                 constants.BUG_CARD_DESC.format(**bug),
-                card_labels=list(labels),
-                card_due="null",
-                list_name=list_name
+                labels=card_labels,
+                due="null",
             )
             click.echo(
                 'You have successfully imported "%s"' % bug['title'])
@@ -120,14 +135,11 @@ def importer(service, id, url, host, user, password, project, board,
         for story_id in list(id):
             story = utils.get_storyboard_story(story_id)
             cards.create_card(
-                trello_key,
-                trello_token,
-                board,
+                board_list,
                 story['title'],
                 constants.STORY_CARD_DESC.format(**story),
-                card_labels=list(labels),
-                card_due="null",
-                list_name=list_name
+                labels=card_labels,
+                due="null",
             )
             click.echo(
                 'You have successfully imported "%s"' % story['title'])
@@ -165,16 +177,39 @@ def importer(service, id, url, host, user, password, project, board,
                 if len(bug.comments) > 0:
                     bug.description = bug.comments[0]['text']
 
-                cards.create_card(
-                    trello_key,
-                    trello_token,
-                    board,
+                bug_card = cards.create_card(
+                    board_list,
                     bug.summary,
                     constants.BZ_CARD_DESC.format(**bug.__dict__),
-                    card_labels=list(labels),
-                    card_due="null",
-                    list_name=list_name
+                    labels=card_labels,
+                    due="null",
                 )
+
+                # adds comments to a card
+                if len(bug.comments) > 1:
+                    for comment in bug.comments[1:]:
+                        bug_card.comment(constants.COMMENT_TEXT.format(
+                            text=comment['text'],
+                            author=comment['author'],
+                            create_time=comment['creation_time'],
+                            is_private=constants.COMMENT_PRIVACY[
+                                comment['is_private']
+                            ],
+                        ))
+
+                # adds external trackers to card
+                if len(bug.external_bugs) > 0:
+                    external_trackers = []
+                    for ext_bug in bug.external_bugs:
+                        external_trackers.append(
+                            os.path.join(ext_bug['type']['url'],
+                                         ext_bug['ext_bz_bug_id'])
+                        )
+                    bug_card.add_checklist(
+                        'External Trackers',
+                        external_trackers
+                    )
+
                 click.echo('You have successfully imported "%s"' % bug.summary)
             except Exception as err:
                 click.echo(err)

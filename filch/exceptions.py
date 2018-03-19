@@ -19,6 +19,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+from filch import constants
 
 
 class MissingConfigurationSectionException(Exception):
@@ -32,10 +33,21 @@ class MissingConfigurationSectionException(Exception):
 
 
 class MissingConfigurationSettingException(Exception):
-    """Missing section from filch configuration file."""
+    """Missing setting from filch configuration file."""
 
     def __init__(self, setting):
         self.setting = setting
         message = ('Missing setting from filch configuration '
                    'file: %s' % self.setting)
         super(MissingConfigurationSettingException, self).__init__(message)
+
+
+class UnsupportedLabelColorException(Exception):
+    """Invalid label color."""
+
+    def __init__(self, color):
+        self.color = color
+        self.colors = constants.SUPPORTED_LABEL_COLORS
+        message = ('%s is an invalid color selection.  Please use one of the'
+                   ' supported colors: %s' % (self.color, self.colors))
+        super(UnsupportedLabelColorException, self).__init__(message)
