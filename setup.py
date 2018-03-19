@@ -26,7 +26,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='filch',
-    version='0.3.4',
+    version='0.3.6',
     author='Ryan Brady',
     author_email='ryan@ryanbrady.org',
     packages=find_packages(),
@@ -40,7 +40,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'filch-import = filch.importer:importer',
+            'filch-import = filch.commands.importer:importer',
+            'filch-debug-board = filch.commands.debug_board:debug',
         ],
     }
 )

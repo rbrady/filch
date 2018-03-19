@@ -58,3 +58,18 @@ bug_url: {weburl}
 source: bz|{id}
 """
 
+COMMENT_PRIVACY = {
+    True: 'Private',
+    False: 'Public'
+}
+
+COMMENT_TEXT = u"""{text}
+
+{author} | {create_time}({is_private})
+"""
+
+
+MAX_DESC_LEN = 16384
+
+SUPPORTED_LABEL_COLORS = ['yellow', 'purple', 'blue', 'red', 'green',
+                          'orange', 'black', 'sky', 'pink', 'lime', 'null']

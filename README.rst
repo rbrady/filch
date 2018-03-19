@@ -58,8 +58,16 @@ to the upstream OpenStack Gerrit instance at https://review.openstack.org.  If
 you do not pass a host argument when using the Bugzilla service, it will use the
 first listed host in the configuration section.
 
-Usage Examples
+
+Managed Boards
 --------------
+
+In an effort to further reduce manual interaction with the Trello board, Filch
+now has the concept of a managed board.  You can create a script (see examples
+directory) that is idempotent to create and populate a Trello board with cards
+based on external artifacts.  If the artifact is already represented in the
+board, the card will be updated.  For any updates needed to a given card, make
+the update to the source artifact and re-run the script.
 
 Importing External Artifacts To Trello
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
