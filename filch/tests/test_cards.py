@@ -26,22 +26,29 @@ from filch import cards
 
 
 class TestCards(object):
+    def setup_method(self):
+        self.mock_list = mock.MagicMock()
+        self.mock_list.name = "New"
 
     def test_create_card(self):
-        target_list = mock.MagicMock()
-        target_list.list_cards.return_value = []
-        cards.create_card(
-            target_list, "test", "test", labels=['test'], due="null")
-        target_list.add_card.assert_called_with(
-            "test", "test", ['test'], "null")
+        self.mock_list.list_cards.return_value = []
+
+        cards.create_card(target_list=self.mock_list,
+                          title="test_card",
+                          description="test_card_desc",
+                          labels=["test_label"],
+                          due="null")
+        self.mock_list.add_card.assert_called_with(
+            "test_card", "test_card_desc", ["test_label"], "null")
 
     def test_create_card_duplicate(self):
-        target_list = mock.MagicMock()
-        duplicate = trello.Card(target_list, None, 'test')
-        duplicate.description = 'test'
-        target_list.list_cards.return_value = [
-            duplicate,
-        ]
-        result = cards.create_card(
-            target_list, "test", "test", labels=['test'], due="null")
-        target_list.add_card.assert_not_called()
+        duplicate_card = trello.Card(self.mock_list, None, "test_card")
+        duplicate_card.description = "duplicate card"
+        self.mock_list.list_cards.return_value = [duplicate_card]
+
+        cards.create_card(target_list=self.mock_list,
+                          title="test_card",
+                          description="duplicate card",
+                          labels=["test_label"],
+                          due="null")
+        self.mock_list.add_card.assert_not_called()

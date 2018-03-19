@@ -55,20 +55,23 @@ trello:
 
 class TestConfiguration(object):
 
-    @mock.patch('filch.configuration.open_config_file')
-    def test_get_config(self, mock_open_file):
-        mock_open_file.return_value = good_config_data
-        result = configuration.get_config()
-        assert result == good_config_obj
+    def test_get_config(self):
+        mock_open = mock.mock_open()
+        mock_open().read.return_value = good_config_data
+        with mock.patch('six.moves.builtins.open', mock_open):
+            result = configuration.get_config()
+            assert result == good_config_obj
 
-    @mock.patch('filch.configuration.open_config_file')
-    def test_get_config_missing_section(self, mock_open_file):
-        mock_open_file.return_value = config_data_missing_section
-        with pytest.raises(peeves.MissingConfigurationSectionException):
-            configuration.get_config()
+    def test_get_config_missing_section(self):
+        mock_open = mock.mock_open()
+        mock_open().read.return_value = config_data_missing_section
+        with mock.patch('six.moves.builtins.open', mock_open):
+            with pytest.raises(peeves.MissingConfigurationSectionException):
+                configuration.get_config()
 
-    @mock.patch('filch.configuration.open_config_file')
-    def test_get_config_missing_setting(self, mock_open_file):
-        mock_open_file.return_value = config_data_missing_setting
-        with pytest.raises(peeves.MissingConfigurationSettingException):
-            configuration.get_config()
+    def test_get_config_missing_setting(self):
+        mock_open = mock.mock_open()
+        mock_open().read.return_value = config_data_missing_setting
+        with mock.patch('six.moves.builtins.open', mock_open):
+            with pytest.raises(peeves.MissingConfigurationSettingException):
+                configuration.get_config()

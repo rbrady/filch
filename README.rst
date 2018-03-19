@@ -151,3 +151,12 @@ When you have multiple hosts listed in a given service, you can use the --host
 argument to select which host to use. ::
 
     filch-import gerrit --id 299937 --host rdo
+
+
+*******
+Testing
+*******
+
+To run unit tests: ::
+
+    python -m pytest
