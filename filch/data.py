@@ -65,13 +65,14 @@ class BugzillaURISource(object):
         # figure out which list
         if bz.status == 'ON_DEV':
             target_list = "In Progress"
-        elif bz.status in ['POST', 'MODIFIED']:
-            target_list = 'Complete'
-        else:
+        elif bz.status in ['NEW', 'ASSIGNED']:
             if 'FutureFeature' in bz.keywords:
                 target_list = 'Features'
             else:
                 target_list = 'Bugs'
+        else:
+            target_list = 'Complete'
+
         return target_list
 
     def create_card(self, bz, labels):

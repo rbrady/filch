@@ -26,12 +26,9 @@ def get_config(pathspec=os.path.expanduser('~/.filch.yaml')):
         config = yaml.safe_load(config_file.read())
         # check for required settings
         if 'trello' not in config:
-            click.echo('Trello config section required.')
             raise exceptions.MissingConfigurationSectionException('trello')
         required_trello_settings = ['api_key', 'access_token']
         for setting in required_trello_settings:
             if setting not in config['trello']:
-                click.echo(
-                    'Missing %s in trello section of config file' % setting)
                 raise exceptions.MissingConfigurationSettingException(setting)
         return config

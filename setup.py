@@ -41,7 +41,7 @@ setup(
     entry_points={
         'console_scripts': [
             'filch-import = filch.commands.importer:importer',
-            'filch-debug-board = filch.commands.debug_board:debug',
+            'filch-report = filch.commands.reports:reports',
         ],
     }
 )
