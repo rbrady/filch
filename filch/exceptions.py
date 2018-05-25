@@ -51,3 +51,15 @@ class UnsupportedLabelColorException(Exception):
         message = ('%s is an invalid color selection.  Please use one of the'
                    ' supported colors: %s' % (self.color, self.colors))
         super(UnsupportedLabelColorException, self).__init__(message)
+
+class APIException(Exception):
+    """An execption occurs in Trello's API or an unhandled status code is returned."""
+
+    def __init__(self, code, reason, text):
+        self.code = code
+        self.reason = reason
+        self.text = text
+
+        message = ('A call to the Trello API has returned a %s code, for "%s", with "%s"' % (self.code, self.reason,
+                                                                                             self.text))
+        super(APIException, self).__init__(message)

@@ -21,7 +21,6 @@
 # SOFTWARE.
 import abc
 import os
-import pdb
 
 import bugzilla
 from launchpadlib.launchpad import Launchpad
@@ -88,6 +87,7 @@ class BugzillaURISource(object):
             'description': constants.BZ_CARD_DESC.format(**bz.__dict__),
             'labels': card_labels,
             'date_due': None,
+            'source': bz.weburl,
         }
 
     @staticmethod
@@ -107,8 +107,11 @@ class BugzillaURISource(object):
                     is_private=constants.COMMENT_PRIVACY[
                         comment['is_private']],
                 )
-                if comment_text not in card_comments:
-                    card.comment(comment_text)
+                try:
+                    if comment_text not in card_comments:
+                        card.comment(comment_text)
+                except Exception as err:
+                    print(str(err))
 
         # add external trackers in bz as a checklist in a card
         # check for external tracker checklist in the card
@@ -177,10 +180,11 @@ class ManualBlueprintSource(object):
         card_labels = bp_labels + self.default_labels
 
         return {
-            'name':  blueprint['title'],
+            'name':  blueprint.get('title', ''),
             'description': constants.BLUEPRINT_CARD_DESC.format(**blueprint),
             'labels': card_labels,
             'date_due': None,
+            'source': blueprint.get('web_link', '')
         }
 
     def update_card(self, blueprint, card, labels):
@@ -202,7 +206,6 @@ class LaunchpadBugSource(object):
                                                 version='devel')
         project = launchpad.projects[self.project]
         bugs = project.searchTasks(**self.search_args)
-
         return bugs
 
     @staticmethod
@@ -211,6 +214,7 @@ class LaunchpadBugSource(object):
 
     @staticmethod
     def sort_card(bug):
+
         if bug.status in ["New", "Confirmed", "Triaged", "Incomplete"]:
             return "Bugs"
         elif bug.status == "In Progress":
@@ -249,6 +253,7 @@ class LaunchpadBugSource(object):
             'description': constants.BUG_CARD_DESC.format(**card_values),
             'labels': card_labels,
             'date_due': None,
+            'source': bug.bug.web_link
         }
 
     def update_card(self, bug, card, labels):

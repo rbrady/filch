@@ -20,8 +20,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import collections
-import pdb
+import itertools
+import json
+import os
 
+import requests
 from trello import trelloclient
 
 from filch import constants
@@ -42,6 +45,23 @@ def get_or_create_board(config, name):
         board = trello_api.add_board(name)
         board.open()
     return board
+
+
+def add_custom_field(config, board_id, field):
+    url = "https://api.trello.com/1/customFields"
+
+    querystring = {
+        "key": config['api_key'],
+        "token": config['access_token']
+    }
+
+    payload = "{\"idModel\":\"5aafc385f26015f1b9f7c372\",\"modelType\":\"board\",\"name\":\"source\",\"type\":\"text\",\"pos\":\"0\"}"
+    headers = {'content-type': 'application/json'}
+
+    response = requests.request("POST", url, data=payload, headers=headers,
+                                params=querystring)
+
+    print(response.text)
 
 
 class BoardManager(object):
@@ -127,12 +147,122 @@ class BoardManager(object):
             else:  # ignore duplicate labels
                 pass
 
+    def get_plugins(self):
+        url = "https://api.trello.com/1/boards/%s/boardPlugins" % self.board.id
+        return json.loads(self.client.fetch_json(url, http_method="GET"))
+
+    def enable_plugin(self, plugin_id):
+        # this method deviates from using the py-trello library because there is a lack of support for status codes
+        # other than 401 or 200.  Coupled with the slow release cadence of py-trello, there's no telling when a
+        # contribution would make it into a release.
+        url = "https://api.trello.com/1/boards/%s/boardPlugins" % self.board.id
+
+        querystring = {"idPlugin": constants.CUSTOM_FIELDS_PLUGIN_ID, "key": self.config['api_key'],
+                       "token":  self.config['access_token']}
+
+        response = requests.request("POST", url, params=querystring)
+
+        if response.status_code == 409:
+            # boardPlugin for that association already exists
+            # fail silently
+            pass
+        elif response.status_code == 200:
+            return json.loads(response.text)
+        else:
+            raise peeves.APIException(response.status_code, response.reason, response.text)
+
+    def add_custom_field(self, field_name, field_type, pos=0):
+        url = "https://api.trello.com/1/customFields"
+
+        payload = {
+            'idModel': self.board.id,
+            'type': field_type,
+            'name': field_name,
+            'modelType': 'board',
+            'pos': pos,
+            "key": self.config['api_key'],
+            "token": self.config['access_token']
+        }
+
+        response = requests.request("POST", url, params=payload)
+
+        if response.status_code == 409:
+            # that association already exists
+            # fail silently
+            pass
+        elif response.status_code == 200:
+            return response.text
+        else:
+            raise peeves.APIException(response.status_code, response.reason, response.text)
+
+    def remove_custom_field(self, field_id):
+        url = "https://api.trello.com/1/customfields/%s" % field_id
+
+        payload = {
+            "key": self.config['api_key'],
+            "token": self.config['access_token']
+        }
+
+        response = requests.request("DELETE", url, params=payload)
+
+        if response.status_code == 200:
+            return response.text
+        else:
+            raise peeves.APIException(response.status_code, response.reason, response.text)
+
+    def get_custom_fields(self):
+        url = "https://api.trello.com/1/boards/%s/customFields" % self.board.id
+
+        payload = {"key": self.config['api_key'], "token": self.config['access_token']}
+
+        response = requests.request("GET", url, params=payload)
+
+        if response.status_code == 409:
+            # that association already exists
+            # fail silently
+            pass
+        elif response.status_code == 200:
+            return json.loads(response.text)
+        else:
+            raise peeves.APIException(
+                response.status_code, response.reason, response.text)
+
+    def set_custom_field(self, card_id, custom_field_id, value):
+        """ Sets a value on a custom field for a card
+
+        The object you pass in as the value should be an object that has a key that matches the type of
+        Custom Field that has been designed. For instance, if there is a Custom Field of type number that a value is
+        being set for, the data you pass into the body should contain the following: "value": {"number": "3"}.
+        """
+        url = "https://api.trello.com/1/card/%s/customField/%s/item" % (
+            card_id, custom_field_id)
+
+        payload = {"key": self.config['api_key'], "token": self.config['access_token']}
+        data = {'value': value}
+
+        response = requests.request("PUT", url, params=payload, json=data)
+
+        if response.status_code == 200:
+            return json.loads(response.text)
+        else:
+            raise peeves.APIException(
+                response.status_code, response.reason, response.text)
+
     def run(self):
+
+        board_fields = self.get_custom_fields()
+        source_field_id = [d for d in board_fields if d['name'] == 'source'][0]['id']
 
         # get a collection of all cards before adding new cards
         # append any created card to this list of cards to catch
         # any duplicates
         cards = self.board.all_cards()
+        # get a list of all the cards for checking duplicates before starting
+        # the create/update block
+        sources = [[(field.value, card) for field in card.customFields
+                    if field.name == 'source'] for card in cards]
+        cards_by_source = {k: v for (k, v) in
+                           list(itertools.chain(*sources))}
         lists = collections.defaultdict(list)
         for trellolist in self.board.all_lists():
             lists[trellolist.name] = trellolist
@@ -145,29 +275,35 @@ class BoardManager(object):
                 card_data = source.create_card(result, board_labels)
                 # where does this card need to be?
                 target_list_name = source.sort_card(result)
-                # TODO (rbrady): once custom fields API access becomes public
-                # in the trello api, update card creation to add source data
-                # custom field and check duplicates against the source data
-                # instead of name and description.  Names and descriptions are
-                # the same for dup BZ's created to map to different versions.
 
                 card_desc = utils.get_description(card_data['description'])
-                card_dups = [card for card in cards
-                             if card.name == card_data['name']
-                             and card.desc == card_desc]
-                if len(card_dups) > 1:
-                    card = card_dups[0]
+
+                if card_data.get('source') in cards_by_source:
+                    card = cards_by_source.get(card_data.get('source'))
                 else:
                     # card does not exist in board
                     # add to specified list for new items
                     # ensure labels being used are actually in the board
                     card_labels = [label for label in board_labels
                                    if label.name in card_data['labels']]
+
                     card = lists[target_list_name].add_card(
                         card_data['name'],
                         card_desc,
                         card_labels,
                         card_data['date_due'])
+
+                # set source for card
+                # if the board supports the "source" custom field
+                if source_field_id is not None:
+                    # check to see if the card source field is set
+                    card_fields = {k: v for (k, v) in
+                                   [(field.name, field.value) for field in
+                                    card.customFields]}
+                    card_source = card_fields.get('source')
+                    if card_source is None:
+                        self.set_custom_field(card.id, source_field_id,
+                                              {'text': card_data['source']})
 
                 # update a card
                 source.update_card(result, card, board_labels)
@@ -176,3 +312,7 @@ class BoardManager(object):
                 if target_list_name != card.get_list().name:
                     # move list
                     card.change_list(lists[target_list_name].id)
+
+                # before we move to the next card, add this card to the
+                # collection of cards we cached before starting this block
+                cards_by_source[card_data['source']] = card

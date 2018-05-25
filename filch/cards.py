@@ -29,7 +29,7 @@ def mirror_card(source, destination):
     # card
     pass
 
-# NOTICE: (rbrady) This method is deprecated and will be removed on 4/1/2018
+# NOTICE: (rbrady) This method is deprecated
 def _get_description(desc):
     l = len(desc)
     if l > _MAX_DESC_LEN:
@@ -37,7 +37,7 @@ def _get_description(desc):
     return desc
 
 
-# NOTICE: (rbrady) This method is deprecated and will be removed on 4/1/2018
+# NOTICE: (rbrady) This method is deprecated
 def create_card(target_list, title, description, labels=[], due="null"):
 
     card_dup = [card for card in target_list.list_cards()

@@ -73,3 +73,5 @@ MAX_DESC_LEN = 16384
 
 SUPPORTED_LABEL_COLORS = ['yellow', 'purple', 'blue', 'red', 'green',
                           'orange', 'black', 'sky', 'pink', 'lime', 'null']
+
+CUSTOM_FIELDS_PLUGIN_ID = "56d5e249a98895a9797bebb9"
