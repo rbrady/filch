@@ -42,6 +42,7 @@ setup(
         'console_scripts': [
             'filch-import = filch.commands.importer:importer',
             'filch-report = filch.commands.reports:reports',
+            'filch-health = filch.commands.health:health',
         ],
     }
 )

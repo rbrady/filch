@@ -74,6 +74,7 @@ class BoardManager(object):
         if not self.board:
             self.board = self._create_board(name)
         self._initialize_board()
+        self.debug = False
 
     def get_client(self):
         return trelloclient.TrelloClient(
@@ -263,6 +264,7 @@ class BoardManager(object):
                     if field.name == 'source'] for card in cards]
         cards_by_source = {k: v for (k, v) in
                            list(itertools.chain(*sources))}
+        sources_to_process = list(cards_by_source.keys())
         lists = collections.defaultdict(list)
         for trellolist in self.board.all_lists():
             lists[trellolist.name] = trellolist
@@ -313,6 +315,17 @@ class BoardManager(object):
                     # move list
                     card.change_list(lists[target_list_name].id)
 
-                # before we move to the next card, add this card to the
-                # collection of cards we cached before starting this block
-                cards_by_source[card_data['source']] = card
+        # before we move to the next card, add this card to the
+        # collection of cards we cached before starting this block
+        cards_by_source[card_data['source']] = card
+        if self.debug:
+            try:
+                sources_to_process.remove(card_data['source'])
+            except Exception as err:
+                print("Encountered error while attempting to "
+                      "process '%s'" % card_data['source'])
+                print(err)
+
+            print("cards not processed:")
+            for source_item in sources_to_process:
+                print(source_item)
