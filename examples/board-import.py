@@ -19,31 +19,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# NOTICE: (rbrady) This method is deprecated and will be removed on 4/1/2018
-_MAX_DESC_LEN = 16384
+#!/usr/bin/env python
+from filch import boards
+from filch import configuration
+from filch import data
+from filch import constants
+
+import pdb
 
 
-def mirror_card(source, destination):
-    # given two different cards from two different boards
-    # mirror the data from the source card to the destination
-    # card
-    # todo(rbrady)
-    pass
+def main():
+    BOARD_NAME = 'My-Example-Board'
+    # BZ Queries
+
+    config = configuration.get_config()
+
+    board_manager = boards.BoardManager(config['trello'], BOARD_NAME)
+
+    # planned Work Labels
+    # Planning is something that needs to be reviewed by PM/UA/TC
+    # Planned is confirmed work for the cycle
+    board_manager.add_labels_by_color("yellow", ["Planning"])
+    board_manager.add_labels_by_color("yellow", ["Planned"])
+
+    board_manager.import_cards()
 
 
-# NOTICE: (rbrady) This method is deprecated
-def _get_description(desc):
-    l = len(desc)
-    if l > _MAX_DESC_LEN:
-        desc = desc[l - _MAX_DESC_LEN:]
-    return desc
-
-
-# NOTICE: (rbrady) This method is deprecated
-def create_card(target_list, title, description, labels=[], due="null"):
-
-    card_dup = [card for card in target_list.list_cards()
-                if card.name == title and card.desc == description]
-    if not card_dup:
-        description = _get_description(description)
-        return target_list.add_card(title, description, labels, due)
+if __name__ == "__main__":
+    main()

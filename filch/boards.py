@@ -24,10 +24,12 @@ import itertools
 import json
 import os
 
+from launchpadlib.launchpad import Launchpad
 import requests
 from trello import trelloclient
 
 from filch import constants
+from filch import data
 from filch import exceptions as peeves
 from filch import utils
 
@@ -249,7 +251,129 @@ class BoardManager(object):
             raise peeves.APIException(
                 response.status_code, response.reason, response.text)
 
+    def _get_lists(self):
+        lists = collections.defaultdict(list)
+        for trellolist in self.board.all_lists():
+            lists[trellolist.name] = trellolist
+        return lists
+
+    def update_cards(self, config):
+        # get reference to only open cards (excludes closed/archived cards)
+        cards = self.board.open_cards()
+        # get all of the cards that have sources
+        source_urls = [[(field.value, card) for field in card.customFields if
+                        field.name == 'source'] for card in cards if
+                       len(card.customFields) > 0]
+        # transform cards with sources into dictionary
+        cards_by_source = {k: v for (k, v) in
+                           list(itertools.chain(*source_urls))}
+
+        # get list of bugzilla IDs for batch query and update
+        bz_ids = [k.split('id=')[1] for k
+                  in cards_by_source.keys() if 'bugzilla' in k]
+
+        bug_ids = [k.split("/")[-1] for k in cards_by_source.keys() if 'bugs' in k]
+
+        blueprints = [k for k in cards_by_source.keys() if 'blueprint' in k]
+
+        board_labels = self.board.get_labels()
+
+        lists = self._get_lists()
+
+        # find all of the BZs in the board
+        if len(bz_ids) > 0:
+            bzs_to_update = data.BugzillaIDSource(
+                config['bugzilla']['redhat'],
+                id_list=bz_ids,
+                include_fields=constants.BZ_INCLUDE_FIELDS,
+            )
+            bzs = bzs_to_update.query()
+            for bz in bzs:
+                card = cards_by_source[bz.weburl]
+                bzs_to_update.update_card(bz, card, board_labels)
+                # where does this card need to be?
+                target_list_name = bzs_to_update.sort_card(bz)
+                if target_list_name != card.get_list().name:
+                    # move list
+                    card.change_list(lists[target_list_name].id)
+
+        # find all of the lp bugs in the board
+        if len(bug_ids) > 0:
+            bugs_source = data.LaunchpadBugIDSource(bug_ids)
+            bugs = bugs_source.query()
+            for bug in bugs:
+                card = cards_by_source[bug.web_link]
+                bugs_source.update_card(bug, card, board_labels)
+                if target_list_name != card.get_list().name:
+                    # move list
+                    card.change_list(lists[target_list_name].id)
+
+    def import_cards(self):
+        board_fields = self.get_custom_fields()
+        source_field_id = [d for d in board_fields
+                           if d['name'] == 'source'][0]['id']
+
+        # all cards are retrieved here, because we don't want to add a new card
+        # for the same source artifact if we've had it in the board already
+        cards = self.board.all_cards()
+
+        # get a list of all the cards for checking duplicates before starting
+        # the create/update block
+        source_urls = [[(field.value, card) for field in card.customFields
+                        if field.name == 'source'] for card in cards]
+        cards_by_source = {k: v for (k, v) in
+                           list(itertools.chain(*source_urls))}
+
+        for source in self.sources:
+            results = source.query()
+            for color, labels in source.get_labels(results).iteritems():
+                self.add_labels_by_color(color, labels)
+            board_labels = self.board.get_labels()
+
+            for result in results:
+                card_data = source.create_card(result, board_labels)
+                # where does this card need to be?
+                target_list_name = source.sort_card(result)
+
+                card_desc = utils.get_description(card_data['description'])
+
+                if card_data.get('source') not in cards_by_source:
+                    # card does not exist in board
+                    # add to specified list for new items
+                    # ensure labels being used are actually in the board
+                    card_labels = [label for label in board_labels
+                                   if label.name in card_data['labels']]
+
+                    card = lists[target_list_name].add_card(
+                        card_data['name'],
+                        card_desc,
+                        card_labels,
+                        card_data['date_due'])
+
+                    # set source for card
+                    # if the board supports the "source" custom field
+                    if source_field_id is not None:
+                        # check to see if the card source field is set
+                        card_fields = {k: v for (k, v) in
+                                       [(field.name, field.value) for field in
+                                        card.customFields]}
+                        card_source = card_fields.get('source')
+                        if card_source is None:
+                            self.set_custom_field(card.id, source_field_id,
+                                                  {'text': card_data['source']})
+
     def run(self):
+        # DEPRECATED
+        # TODO(rbrady): Look at changing the strategy here to separate the import
+        # and updating of cards.  The imports should query specific sources and
+        # provide the results to the create pipeline, based on whether or not the
+        # source already exists in a card on the board.
+
+        # Next, the update process should be collecting each card that is on the
+        # board and updating it.  We can cache the results from the import query
+        # to help speed up the process, but will need to directly query for the
+        # remaining cards.  Look to see if there is something that can be done
+        # for querying sources via IDs so we cut down on request/response generation.
 
         board_fields = self.get_custom_fields()
         source_field_id = [d for d in board_fields if d['name'] == 'source'][0]['id']
@@ -260,19 +384,27 @@ class BoardManager(object):
         cards = self.board.all_cards()
         # get a list of all the cards for checking duplicates before starting
         # the create/update block
-        sources = [[(field.value, card) for field in card.customFields
-                    if field.name == 'source'] for card in cards]
+        source_urls = [[(field.value, card) for field in card.customFields
+                        if field.name == 'source'] for card in cards]
         cards_by_source = {k: v for (k, v) in
-                           list(itertools.chain(*sources))}
+                           list(itertools.chain(*source_urls))}
         sources_to_process = list(cards_by_source.keys())
-        lists = collections.defaultdict(list)
-        for trellolist in self.board.all_lists():
-            lists[trellolist.name] = trellolist
+        lists = self._get_lists()
         for source in self.sources:
             results = source.query()
             for color, labels in source.get_labels(results).iteritems():
                 self.add_labels_by_color(color, labels)
             board_labels = self.board.get_labels()
+            # TODO(rbrady): try a strategy where each item from the query is
+            # just used to check for cards to be created.  If the result.source
+            # is already present in the board, pass.  if the result is not present,
+            # then add it to the board.  Once all the cards have been added to
+            # the board from the current results, go through each card in the
+            # board and run the update method.  For the update method, check for
+            # each card source in the query results first (e.g. checking the cache)
+            # and if not present then do a single request based on the source url.
+            # see if there is a way to do batching of requests per single source
+            # of truth
             for result in results:
                 card_data = source.create_card(result, board_labels)
                 # where does this card need to be?

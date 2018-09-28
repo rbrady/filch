@@ -20,6 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import bugzilla
+from launchpadlib.launchpad import Launchpad
 import requests
 
 from filch import constants
@@ -36,6 +37,22 @@ def get_launchpad_bug(bug_id):
     url = 'https://api.launchpad.net/devel/bugs/%s'
     r = requests.get(url % bug_id)
     return r.json()
+
+
+def add_tags_to_launchpad_bug(bug_id, tags):
+    launchpad = Launchpad.login_with('Filch', 'production', version='devel')
+    bug = launchpad.bugs[bug_id]
+    bug.tags = bug.tags + tags
+    bug.lp_save()
+
+
+def remove_tags_from_launchpad_bug(bug_id, tags):
+    launchpad = Launchpad.login_with('Filch', 'production', version='devel')
+    bug = launchpad.bugs[bug_id]
+    for tag in tags:
+        bug.tags.remove(tag)
+    bug.tags = bug.tags
+    bug.lp_save()
 
 
 def get_storyboard_story(story_id):

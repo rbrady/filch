@@ -32,12 +32,14 @@ from filch import utils
 
 class BugzillaURISource(object):
 
-    def __init__(self, config, uri, include_fields, default_labels=[]):
+    def __init__(self, config, uri, include_fields, include_comments=False,
+                 default_labels=[]):
         self.uri = uri
         self.config = config
         self.client = self.get_client()
         self.include_fields = include_fields
         self.default_labels = default_labels
+        self.include_comments = include_comments
 
     def get_client(self):
         return bugzilla.Bugzilla44(
@@ -90,28 +92,28 @@ class BugzillaURISource(object):
             'source': bz.weburl,
         }
 
-    @staticmethod
-    def update_card(bz, card, labels):
+    def update_card(self, bz, card, labels):
         # todo (rbrady): the pytrello library does not have support for
         # deleting labels from a card.  Add the support to the pytrello
         # library and then update the code here to check the current version
         # and priority and update as necessary.
-        card_comments = [cm['data']['text'] for cm in card.get_comments()]
-        # add comments in bz as comments in a card
-        if len(bz.comments) > 1:
-            for comment in bz.comments[1:]:
-                comment_text = constants.COMMENT_TEXT.format(
-                    text=comment['text'],
-                    author=comment['author'],
-                    create_time=comment['creation_time'],
-                    is_private=constants.COMMENT_PRIVACY[
-                        comment['is_private']],
-                )
-                try:
-                    if comment_text not in card_comments:
-                        card.comment(comment_text)
-                except Exception as err:
-                    print(str(err))
+        if self.include_comments:
+            card_comments = [cm['data']['text'] for cm in card.get_comments()]
+            # add comments in bz as comments in a card
+            if len(bz.comments) > 1:
+                for comment in bz.comments[1:]:
+                    comment_text = constants.COMMENT_TEXT.format(
+                        text=comment['text'],
+                        author=comment['author'],
+                        create_time=comment['creation_time'],
+                        is_private=constants.COMMENT_PRIVACY[
+                            comment['is_private']],
+                    )
+                    try:
+                        if comment_text not in card_comments:
+                            card.comment(comment_text)
+                    except Exception as err:
+                        print(str(err))
 
         # add external trackers in bz as a checklist in a card
         # check for external tracker checklist in the card
@@ -137,6 +139,24 @@ class BugzillaURISource(object):
 
             for tracker in external_trackers:
                 trackers_checklist.add_checklist_item(tracker)
+
+
+class BugzillaIDSource(BugzillaURISource):
+
+    def __init__(self, config, id_list, include_fields=[],
+                 uri="https://bugzilla.redhat.com/buglist.cgi?quicksearch=",
+                 include_comments=False,
+                 default_labels=[]):
+        super(BugzillaIDSource, self).__init__(
+            config, uri, include_fields=include_fields,
+            include_comments=include_comments, default_labels=[])
+        self.id_list = id_list
+
+    def query(self):
+        self.uri += "%20".join(self.id_list)
+        query = self.client.url_to_query(self.uri)
+        query["include_fields"] = self.include_fields
+        return self.client.query(query)
 
 
 class ManualBlueprintSource(object):
@@ -222,38 +242,38 @@ class LaunchpadBugSource(object):
         else:
             return "Complete"
 
-    def create_card(self, bug, labels):
+    def create_card(self, bug_task, labels=[]):
+
         try:
-            version = bug.milestone.name.split('/')[-1].split('-')[0]
+            version = bug_task.milestone.name.split('/')[-1].split('-')[0]
         except:
             version = "unspecified"
-
-        priority = bug.importance
+        priority = bug_task.importance
         # normalize the priority to fit within typical Bug attributes
         if priority == 'Critical':
             priority = 'High'
         if priority == 'Wishlist':
             priority = 'Low'
 
-        bp_labels = [label.name for label in labels
+        lp_labels = [label.name for label in labels
                      if label.name.endswith("(%s)" % version.title())
                      or label.name.lower() == priority.lower()]
 
-        card_labels = bp_labels + self.default_labels
+        card_labels = lp_labels + self.default_labels
 
         card_values = {
-            "description": bug.bug.description,
-            "web_link": bug.bug.web_link,
-            "information_type": bug.bug.information_type,
-            "id": bug.bug.id
+            "description": bug_task.bug.description,
+            "web_link": bug_task.bug.web_link,
+            "information_type": bug_task.bug.information_type,
+            "id": bug_task.bug.id
         }
 
         return {
-            'name':  bug.bug.title,
+            'name':  bug_task.bug.title,
             'description': constants.BUG_CARD_DESC.format(**card_values),
             'labels': card_labels,
             'date_due': None,
-            'source': bug.bug.web_link
+            'source': bug_task.bug.web_link
         }
 
     def update_card(self, bug, card, labels):
@@ -261,3 +281,17 @@ class LaunchpadBugSource(object):
         # if needed, once the ability to delete labels from a card is added
         # to py-trello.
         pass
+
+
+class LaunchpadBugIDSource(LaunchpadBugSource):
+
+    def __init__(self, id_list, default_labels=[]):
+        self.id_list = id_list
+        self.default_labels = default_labels
+
+    def query(self):
+        launchpad = Launchpad.login_with('Filch', 'production', version='devel')
+        bugs = []
+        for bug_id in self.id_list:
+            bugs.append(launchpad.bugs[bug_id])
+        return bugs

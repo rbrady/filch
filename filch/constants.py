@@ -75,3 +75,7 @@ SUPPORTED_LABEL_COLORS = ['yellow', 'purple', 'blue', 'red', 'green',
                           'orange', 'black', 'sky', 'pink', 'lime', 'null']
 
 CUSTOM_FIELDS_PLUGIN_ID = "56d5e249a98895a9797bebb9"
+
+BZ_INCLUDE_FIELDS = ["id", "summary", "version", "status", "priority",
+                         "comments", "weburl", "information_type",
+                         "external_bugs", "keywords"]
