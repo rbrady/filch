@@ -234,7 +234,6 @@ class LaunchpadBugSource(object):
 
     @staticmethod
     def sort_card(bug):
-
         if bug.status in ["New", "Confirmed", "Triaged", "Incomplete"]:
             return "Bugs"
         elif bug.status == "In Progress":

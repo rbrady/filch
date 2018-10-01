@@ -304,6 +304,7 @@ class BoardManager(object):
             for bug in bugs:
                 card = cards_by_source[bug.web_link]
                 bugs_source.update_card(bug, card, board_labels)
+                target_list_name = bugs_source.sort_card(bug.bug_tasks[0])
                 if target_list_name != card.get_list().name:
                     # move list
                     card.change_list(lists[target_list_name].id)
