@@ -59,7 +59,9 @@ def get_storyboard_story(story_id):
     url = 'https://storyboard.openstack.org/api/v1/stories/%s' % story_id
     r = requests.get(url)
     story = r.json()
-    story['story_url'] = url
+    story['story_url'] = (
+            'https://storyboard.openstack.org/#!/story/%s' %
+            story_id)
     return story
 
 
